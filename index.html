@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Roleta CG LUB</title>
+<meta name="description" content="Roleta de premiações da CG LUB Distribuidora — Lubrax Bahia e Sergipe">
+<meta name="theme-color" content="#071409">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Roleta CG LUB">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800&family=Barlow:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --verde-escuro:#071409;
+    --verde:#00703C;
+    --verde-claro:#0A8F4D;
+    --amarelo:#FFD200;
+    --amarelo-esc:#E0B800;
+    --branco:#FFFFFF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Barlow',sans-serif;
+    background:
+      radial-gradient(ellipse at 50% 40%, #0f3a1c 0%, var(--verde-escuro) 65%);
+    background-color:var(--verde-escuro);
+    color:var(--branco);
+    overflow:hidden;
+    min-height:100vh;min-height:100dvh;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;-webkit-user-select:none;
+  }
+  /* ---- layout: celular / retrato (empilhado) ---- */
+  .layout{
+    --roda: min(92vw, calc((100vh - 350px) / 1.07));
+    position:relative;z-index:2;
+    min-height:100vh;min-height:100dvh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:64px 16px 16px;
+  }
+  @supports (height:100dvh){ .layout{ --roda: min(92vw, calc((100dvh - 350px) / 1.07)); } }
+  .painel{display:contents}
+  .painel header{order:0} .palco{order:1} .acao{order:2}
+  .acao{display:flex;flex-direction:column;align-items:center}
+  /* ---- layout: computador / paisagem (roleta à esquerda, painel à direita) ---- */
+  @media (min-aspect-ratio: 5/4) and (min-width: 800px){
+    .layout{
+      --roda: min(calc(100vh - 110px), 54vw);
+      flex-direction:row;gap:clamp(32px,5vw,96px);padding:24px 48px;
+    }
+    @supports (height:100dvh){ .layout{ --roda: min(calc(100dvh - 110px), 54vw); } }
+    .painel{display:flex;flex-direction:column;align-items:flex-start;max-width:min(36vw,520px);order:2}
+    .palco{order:1}
+    .acao{align-items:flex-start}
+    .painel header{text-align:left;margin:0 0 4vh}
+    .painel .logo{width:clamp(260px,30vw,520px);max-height:none;margin:0 0 8px -6px}
+    .painel .sub{font-size:clamp(18px,1.9vw,32px);margin-top:10px}
+    .painel .sub span{display:block} .painel .sub .sep{display:none}
+    .painel .botao{margin-top:0;font-size:clamp(28px,3vw,48px);padding:14px 64px}
+    .painel .dica{margin-top:16px;font-size:15px}
+    .palco{margin-top:calc(var(--roda)*.07)}
+  }
+  /* telas baixas em paisagem (celular deitado) */
+  @media (max-height: 500px) and (orientation: landscape){
+    .layout{ --roda: calc(100vh - 56px); flex-direction:row; gap:28px; padding:12px 24px; }
+    @supports (height:100dvh){ .layout{ --roda: calc(100dvh - 56px); } }
+    .palco{margin-top:calc(var(--roda)*.07)}
+    .painel .sub span{display:block} .painel .sub .sep{display:none}
+    .painel{display:flex;flex-direction:column;align-items:flex-start;order:2}
+    .acao{align-items:flex-start}
+    .painel header{text-align:left;margin:0 0 16px}
+    .painel .botao{margin-top:0}
+  }
+  /* faixas diagonais amarelas estilo Lubrax */
+  body::before,body::after{
+    content:"";position:fixed;pointer-events:none;
+    background:var(--amarelo);opacity:.9;height:10px;width:140vmax;
+    transform-origin:left center;
+  }
+  body::before{left:-10vmax;bottom:12vh;transform:rotate(-24deg)}
+  body::after{left:55vw;bottom:-5vh;transform:rotate(-58deg);height:6px;opacity:.6}
+
+  header{text-align:center;margin-bottom:12px;z-index:2}
+  .marca{
+    font-family:'Barlow Condensed',sans-serif;font-weight:800;
+    font-size:clamp(26px,4.4vh,48px);letter-spacing:.02em;line-height:1;
+  }
+  .marca span{color:var(--amarelo)}
+  .logo{display:block;width:min(70vw,340px);max-height:13vh;height:auto;object-fit:contain;margin:0 auto 6px}
+  @media (max-height: 500px) and (orientation: landscape){ .logo{width:min(36vw,260px)} }
+  .cartao .logo-res{display:block;width:min(46vw,220px);height:auto;margin:0 auto 1.6vh}
+  .sub{
+    font-family:'Barlow Condensed',sans-serif;font-style:italic;font-weight:800;
+    color:var(--amarelo);font-size:clamp(16px,2.6vh,26px);letter-spacing:.04em;margin-top:.4vh;
+  }
+
+  .palco{position:relative;width:var(--roda);height:var(--roda);margin-top:calc(var(--roda)*.07);flex:none;z-index:2}
+  canvas{width:100%;height:100%;display:block}
+
+  .ponteiro{
+    position:absolute;left:50%;top:-6.5%;width:8%;transform-origin:50% 20.69%;
+    transform:translateX(-50%) rotate(0deg);
+    filter:drop-shadow(0 4px 6px rgba(0,0,0,.5));z-index:3;
+  }
+
+  .botao{
+    margin-top:20px;z-index:2;cursor:pointer;border:none;
+    font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(24px,3.6vh,36px);
+    letter-spacing:.06em;color:var(--verde-escuro);background:var(--amarelo);
+    padding:10px 56px;border-radius:999px;
+    box-shadow:0 6px 0 var(--amarelo-esc),0 10px 24px rgba(0,0,0,.45);
+    transition:transform .1s, box-shadow .1s, opacity .2s;
+  }
+  .botao:hover{transform:translateY(-2px)}
+  .botao:active{transform:translateY(4px);box-shadow:0 2px 0 var(--amarelo-esc),0 4px 10px rgba(0,0,0,.4)}
+  .botao:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .dica{margin-top:10px;font-size:13px;opacity:.55;z-index:2;text-align:center}
+  @media (hover:none){ .dica{display:none} }
+
+  .cantos{position:fixed;top:14px;right:14px;display:flex;gap:8px;z-index:5}
+  .icone{
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff;
+    width:40px;height:40px;border-radius:10px;cursor:pointer;font-size:18px;
+  }
+  .icone:hover{background:rgba(255,255,255,.18)}
+  .instalar{
+    display:none;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:10px;cursor:pointer;
+    background:var(--amarelo);color:var(--verde-escuro);border:none;
+    font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:17px;letter-spacing:.03em;
+  }
+  .instalar.on{display:inline-flex}
+  .cantos{top:max(14px, env(safe-area-inset-top));right:max(14px, env(safe-area-inset-right))}
+  .passos{counter-reset:p;list-style:none;margin:6px 0 4px}
+  .passos li{counter-increment:p;position:relative;padding:8px 0 8px 40px;font-size:16px;line-height:1.35}
+  .passos li::before{content:counter(p);position:absolute;left:0;top:6px;width:28px;height:28px;border-radius:50%;
+    background:var(--amarelo);color:var(--verde-escuro);font-family:'Barlow Condensed',sans-serif;font-weight:800;
+    display:flex;align-items:center;justify-content:center}
+  .passos b{color:var(--amarelo)}
+  .ico-share{display:inline-block;width:18px;height:18px;vertical-align:-3px}
+
+  /* Resultado */
+  .modal{
+    position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(4,12,6,.72);backdrop-filter:blur(4px);z-index:10;
+  }
+  .modal.on{display:flex}
+  .cartao{
+    text-align:center;background:var(--verde);border:4px solid var(--amarelo);
+    border-radius:28px;padding:4vh 7vh;box-shadow:0 20px 60px rgba(0,0,0,.6);
+    animation:pop .55s cubic-bezier(.2,1.6,.4,1);
+    max-width:90vw;
+  }
+  @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+  .cartao .t1{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(22px,3.5vh,34px);color:var(--amarelo);letter-spacing:.05em}
+  .cartao .num{
+    font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(110px,22vh,220px);line-height:1;
+    color:var(--branco);text-shadow:0 6px 0 rgba(0,0,0,.25);
+  }
+  .cartao .premio{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(24px,4.5vh,44px);margin-bottom:2vh}
+  .cartao .botao{margin-top:1vh;font-size:22px;padding:10px 40px}
+
+  /* Configuração */
+  .config .cartao{background:var(--verde-escuro);text-align:left;padding:28px 32px;width:min(480px,92vw)}
+  .config h2{font-family:'Barlow Condensed',sans-serif;color:var(--amarelo);font-size:28px;margin-bottom:6px}
+  .config p{font-size:13px;opacity:.7;margin-bottom:14px}
+  .linha{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .linha b{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:18px;flex:none}
+  .linha input{flex:1;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#fff;font:inherit}
+  .config .acoes{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+  .config .botao{margin:0;font-size:20px;padding:8px 26px}
+  .botao.sec{background:transparent;color:#fff;box-shadow:none;border:1px solid rgba(255,255,255,.3)}
+
+  #confete{position:fixed;inset:0;pointer-events:none;z-index:11}
+</style>
+</head>
+<body>
+
+<div class="cantos">
+  <button class="instalar" id="btnInstalar" title="Instalar como aplicativo">📲 Instalar app</button>
+  <button class="icone" id="btnConfig" title="Configurar prêmios">⚙</button>
+  <button class="icone" id="btnSom" title="Som ligado/desligado">🔊</button>
+  <button class="icone" id="btnTela" title="Tela cheia">⛶</button>
+</div>
+
+<main class="layout">
+<div class="palco">
+  <svg class="ponteiro" id="ponteiro" viewBox="0 0 80 145">
+    <defs>
+      <linearGradient id="lam" x1="0" x2="1">
+        <stop offset="0" stop-color="#d9d9d9"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#bdbdbd"/>
+      </linearGradient>
+      <radialGradient id="hub" cx=".35" cy=".35"><stop offset="0" stop-color="#fff3a0"/><stop offset="1" stop-color="#E0B800"/></radialGradient>
+    </defs>
+    <path d="M27 30 L53 30 L43.5 136 Q40 144 36.5 136 Z" fill="url(#lam)" stroke="#071409" stroke-width="2.5" stroke-linejoin="round"/>
+    <circle cx="40" cy="30" r="24" fill="#071409"/>
+    <circle cx="40" cy="30" r="20" fill="url(#hub)" stroke="#071409" stroke-width="2"/>
+    <circle cx="40" cy="30" r="6" fill="#071409"/>
+  </svg>
+  <canvas id="roda"></canvas>
+</div>
+<div class="painel">
+<header>
+  <img class="logo" src="assets/logo-cglub-cor.png" alt="CG LUB Distribuidora" width="1100" height="392">
+  <div class="sub"><span>É TEMPO DE LUBRAX</span><span class="sep"> · </span><span>GIRE E GANHE!</span></div>
+</header>
+<div class="acao">
+<button class="botao" id="girar">GIRAR!</button>
+<div class="dica">Clique no botão ou aperte ESPAÇO</div>
+</div>
+</div>
+</main>
+
+<!-- Resultado -->
+<div class="modal" id="modal">
+  <div class="cartao">
+    <img class="logo-res" src="assets/logo-cglub-cor.png" alt="CG LUB">
+    <div class="t1">PARABÉNS! VOCÊ TIROU O</div>
+    <div class="num" id="resNum">1</div>
+    <div class="premio" id="resPremio"></div>
+    <button class="botao" id="fechar">OK</button>
+  </div>
+</div>
+
+<!-- Configuração -->
+<div class="modal config" id="config">
+  <div class="cartao">
+    <h2>Prêmios da roleta</h2>
+    <p>Opcional: dê um nome para cada número. Deixe em branco para mostrar só o número.</p>
+    <div id="linhas"></div>
+    <div class="acoes">
+      <button class="botao sec" id="cancelar">Cancelar</button>
+      <button class="botao" id="salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Como instalar -->
+<div class="modal config" id="instrucoes">
+  <div class="cartao">
+    <h2>Instalar a roleta</h2>
+    <p id="instrTexto">Coloque a roleta na tela inicial e abra como um aplicativo, em tela cheia.</p>
+    <ol class="passos" id="instrPassos"></ol>
+    <div class="acoes"><button class="botao" id="instrOk">Entendi</button></div>
+  </div>
+</div>
+
+<canvas id="confete"></canvas>
+
+<script>
+(() => {
+  const N = 8;
+  const SEG = Math.PI * 2 / N;
+  const VERDE = '#00703C', VERDE2 = '#005A30', AMARELO = '#FFD200', AMARELO2 = '#F0BE00';
+  const ESCURO = '#071409';
+
+  let premios = Array(N).fill('');
+  try { const s = JSON.parse(localStorage.getItem('roletaCGLub') || 'null'); if (Array.isArray(s)) premios = s; } catch(e){}
+
+  const IMG = {};
+  [['cor','assets/simbolo-cor.png'],['amarelo','assets/simbolo-amarelo.png'],['verde','assets/simbolo-verde.png']].forEach(([k,src])=>{
+    IMG[k] = new Image(); IMG[k].onload = () => desenha(); IMG[k].src = src;
+  });
+  const cv = document.getElementById('roda');
+  const ctx = cv.getContext('2d');
+  const ponteiro = document.getElementById('ponteiro');
+  const btn = document.getElementById('girar');
+  let W = 0, dpr = 1;
+
+  // ---------- estado físico ----------
+  let theta = Math.random() * Math.PI * 2; // rotação da roda (rad)
+  let omega = 0;                           // velocidade angular (rad/s)
+  let girando = false;
+
+  function tamanho(){
+    dpr = window.devicePixelRatio || 1;
+    const r = cv.getBoundingClientRect();
+    W = r.width;
+    cv.width = W * dpr; cv.height = W * dpr;
+    desenha();
+  }
+
+  function desenha(){
+    const c = ctx, R = W / 2;
+    c.setTransform(dpr,0,0,dpr,0,0);
+    c.clearRect(0,0,W,W);
+    c.save();
+    c.translate(R, R);
+
+    // aro externo
+    c.beginPath(); c.arc(0,0,R*0.985,0,Math.PI*2);
+    const aro = c.createLinearGradient(-R,-R,R,R);
+    aro.addColorStop(0,'#FFFFFF'); aro.addColorStop(1,'#CFCFCF');
+    c.fillStyle = aro; c.fill();
+    c.beginPath(); c.arc(0,0,R*0.94,0,Math.PI*2);
+    c.fillStyle = ESCURO; c.fill();
+
+    const Rr = R * 0.915;
+    c.rotate(theta);
+
+    // fatias
+    for (let i = 0; i < N; i++){
+      const a0 = -Math.PI/2 + i*SEG, a1 = a0 + SEG;
+      const verde = i % 2 === 0;
+      const g = c.createRadialGradient(0,0,Rr*0.2,0,0,Rr);
+      g.addColorStop(0, verde ? VERDE2 : AMARELO2);
+      g.addColorStop(1, verde ? VERDE : AMARELO);
+      c.beginPath(); c.moveTo(0,0); c.arc(0,0,Rr,a0,a1); c.closePath();
+      c.fillStyle = g; c.fill();
+      c.lineWidth = Rr*0.012; c.strokeStyle = ESCURO; c.stroke();
+
+      // número + nome
+      c.save();
+      c.rotate(a0 + SEG/2 + Math.PI/2);
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillStyle = verde ? AMARELO : ESCURO;
+      c.font = `800 ${Rr*0.2}px 'Barlow Condensed', sans-serif`;
+      c.fillText(String(i+1), 0, -Rr*0.72);
+      if (premios[i]){
+        c.fillStyle = verde ? '#FFFFFF' : ESCURO;
+        let fs = Rr*0.065;
+        c.font = `700 ${fs}px 'Barlow Condensed', sans-serif`;
+        while (c.measureText(premios[i]).width > Rr*0.42 && fs > 8){ fs -= 1; c.font = `700 ${fs}px 'Barlow Condensed', sans-serif`; }
+        c.fillText(premios[i].toUpperCase(), 0, -Rr*0.53);
+      }
+      // ornamento: alterna símbolo CG LUB (pares 1-2, 5-6) e gota de óleo (3-4, 7-8)
+      const gy = premios[i] ? -Rr*0.40 : -Rr*0.47;
+      const simb = verde ? IMG.amarelo : IMG.verde;
+      if (i % 4 < 2 && simb.complete && simb.naturalWidth){
+        const h = Rr*0.19, w = h*simb.naturalWidth/simb.naturalHeight;
+        c.drawImage(simb, -w/2, gy - h*0.62, w, h);
+      } else {
+        const gs = Rr*0.045;
+        c.beginPath();
+        c.moveTo(0, gy - gs*1.6);
+        c.bezierCurveTo(gs*1.1, gy - gs*0.3, gs, gy + gs, 0, gy + gs);
+        c.bezierCurveTo(-gs, gy + gs, -gs*1.1, gy - gs*0.3, 0, gy - gs*1.6);
+        c.fillStyle = verde ? 'rgba(255,210,0,.55)' : 'rgba(7,20,9,.35)';
+        c.fill();
+      }
+      c.restore();
+    }
+
+    // pinos nas divisões
+    for (let i = 0; i < N; i++){
+      const a = -Math.PI/2 + i*SEG;
+      const x = Math.cos(a)*R*0.955, y = Math.sin(a)*R*0.955;
+      const pg = c.createRadialGradient(x-R*0.008,y-R*0.008,0,x,y,R*0.022);
+      pg.addColorStop(0,'#ffffff'); pg.addColorStop(.6,'#c8c8c8'); pg.addColorStop(1,'#7a7a7a');
+      c.beginPath(); c.arc(x+R*0.004,y+R*0.006,R*0.022,0,Math.PI*2);
+      c.fillStyle = 'rgba(0,0,0,.35)'; c.fill();
+      c.beginPath(); c.arc(x,y,R*0.022,0,Math.PI*2);
+      c.fillStyle = pg; c.fill();
+      c.lineWidth = 1.5; c.strokeStyle = '#555'; c.stroke();
+    }
+
+    // miolo com logo CG LUB
+    c.rotate(-theta); // logo fica sempre de pé
+    c.beginPath(); c.arc(0,0,Rr*0.27,0,Math.PI*2);
+    c.fillStyle = '#FFFFFF'; c.fill();
+    c.beginPath(); c.arc(0,0,Rr*0.245,0,Math.PI*2);
+    c.fillStyle = ESCURO; c.fill();
+    c.beginPath(); c.arc(0,0,Rr*0.245,0,Math.PI*2);
+    c.lineWidth = Rr*0.012; c.strokeStyle = AMARELO; c.stroke();
+    if (IMG.cor.complete && IMG.cor.naturalWidth){
+      const h = Rr*0.33, w = h*IMG.cor.naturalWidth/IMG.cor.naturalHeight;
+      c.drawImage(IMG.cor, -w/2 - Rr*0.012, -h/2 + Rr*0.01, w, h);
+    } else {
+      c.textAlign='center'; c.textBaseline='middle';
+      c.fillStyle = '#FFFFFF';
+      c.font = `800 ${Rr*0.13}px 'Barlow Condensed', sans-serif`;
+      c.fillText('CG', 0, -Rr*0.055);
+      c.fillStyle = AMARELO;
+      c.font = `800 ${Rr*0.1}px 'Barlow Condensed', sans-serif`;
+      c.fillText('LUB', 0, Rr*0.07);
+    }
+    c.restore();
+  }
+
+  // ---------- som ----------
+  let somLigado = true, ac = null;
+  function audio(){ if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); return ac; }
+  // ruído branco reaproveitado (base dos sons mecânicos)
+  let ruido = null;
+  function bufRuido(a){
+    if (ruido) return ruido;
+    ruido = a.createBuffer(1, a.sampleRate*0.5, a.sampleRate);
+    const d = ruido.getChannelData(0);
+    for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+    return ruido;
+  }
+
+  // "clac" seco de lingueta batendo em pino de metal — som de roleta real
+  function tique(intens){
+    if (!somLigado) return;
+    const a = audio(), t = a.currentTime;
+    // estalo: ruído curto filtrado
+    const n = a.createBufferSource(); n.buffer = bufRuido(a);
+    const bp = a.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value = 2200 + Math.random()*400; bp.Q.value = 1.4;
+    const g = a.createGain();
+    g.gain.setValueAtTime(0.55*intens, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.025);
+    n.connect(bp).connect(g).connect(a.destination);
+    n.start(t, Math.random()*0.4); n.stop(t+0.03);
+    // corpo: batidinha grave de madeira
+    const o = a.createOscillator(), g2 = a.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(110, t+0.04);
+    g2.gain.setValueAtTime(0.25*intens, t); g2.gain.exponentialRampToValueAtTime(0.001, t+0.05);
+    o.connect(g2).connect(a.destination); o.start(t); o.stop(t+0.06);
+  }
+
+  // resultado: fogos de artifício + aplausos
+  let mestreFx = null;
+  function mestre(a){
+    if (mestreFx) return mestreFx;
+    const comp = a.createDynamicsCompressor();
+    comp.threshold.value = -8; comp.ratio.value = 12; comp.knee.value = 6; comp.attack.value = 0.002; comp.release.value = 0.15;
+    mestreFx = a.createGain(); mestreFx.gain.value = 0.85;
+    const clip = a.createWaveShaper();             // saturação suave: nunca estoura
+    const cv = new Float32Array(2048);
+    for (let i=0;i<cv.length;i++){ const x = i/1023.5 - 1; cv[i] = Math.tanh(x*1.4)/Math.tanh(1.4); }
+    clip.curve = cv;
+    mestreFx.connect(comp).connect(clip).connect(a.destination);
+    return mestreFx;
+  }
+  let reverb = null;
+  function salaReverb(a){
+    if (reverb) return reverb;
+    const len = a.sampleRate*1.6, buf = a.createBuffer(2, len, a.sampleRate);
+    for (let ch=0; ch<2; ch++){
+      const d = buf.getChannelData(ch);
+      for (let i=0;i<len;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 3);
+    }
+    reverb = a.createConvolver(); reverb.buffer = buf;
+    const volta = a.createGain(); volta.gain.value = 0.22;
+    reverb.connect(volta).connect(mestre(a));
+    return reverb;
+  }
+  function saida(a, g){ g.connect(mestre(a)); g.connect(salaReverb(a)); }
+
+  function aplausos(a, t, dur){
+    for (let i=0;i<340;i++){
+      const s = t + Math.random()*dur;
+      const fade = 1 - Math.max(0, (s - t - dur*0.5)/(dur*0.5));
+      const n = a.createBufferSource(); n.buffer = bufRuido(a);
+      const bp = a.createBiquadFilter(); bp.type='bandpass';
+      bp.frequency.value = 900 + Math.random()*1600; bp.Q.value = 1.2;
+      const g = a.createGain();
+      g.gain.setValueAtTime(0.22*fade*(0.5+Math.random()*0.5), s);
+      g.gain.exponentialRampToValueAtTime(0.001, s+0.03);
+      n.connect(bp).connect(g); saida(a, g); n.start(s, Math.random()*0.4); n.stop(s+0.04);
+    }
+  }
+
+  // ---------- fogos de artifício ----------
+  function assobio(a, t, dur){        // foguete subindo: "fiuuuuu"
+    const o = a.createOscillator(); o.type = 'sine';
+    const f0 = 900 + Math.random()*400;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f0*2.6, t+dur);
+    const g = a.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.06, t+0.08);
+    g.gain.setValueAtTime(0.06, t+dur*0.8);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); saida(a, g); o.start(t); o.stop(t+dur+0.02);
+    // chiado do rastro do foguete
+    const n = a.createBufferSource(); n.buffer = bufRuido(a); n.loop = true;
+    const bp = a.createBiquadFilter(); bp.type='bandpass'; bp.Q.value = 3;
+    bp.frequency.setValueAtTime(2000, t); bp.frequency.exponentialRampToValueAtTime(5000, t+dur);
+    const ng = a.createGain();
+    ng.gain.setValueAtTime(0.0001, t); ng.gain.exponentialRampToValueAtTime(0.05, t+0.1);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    n.connect(bp).connect(ng); saida(a, ng); n.start(t); n.stop(t+dur+0.02);
+  }
+
+  function estouro(a, t, forca){      // "BUM" grave
+    const n = a.createBufferSource(); n.buffer = bufRuido(a); n.loop = true;
+    const lp = a.createBiquadFilter(); lp.type='lowpass';
+    lp.frequency.setValueAtTime(3500, t); lp.frequency.exponentialRampToValueAtTime(180, t+0.6);
+    const g = a.createGain();
+    g.gain.setValueAtTime(0.7*forca, t); g.gain.exponentialRampToValueAtTime(0.001, t+1.1);
+    n.connect(lp).connect(g); saida(a, g); n.start(t); n.stop(t+1.2);
+    const o = a.createOscillator(), og = a.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(35, t+0.5);
+    og.gain.setValueAtTime(0.55*forca, t); og.gain.exponentialRampToValueAtTime(0.001, t+0.6);
+    o.connect(og).connect(mestre(a)); o.start(t); o.stop(t+0.65);
+  }
+
+  function crepitar(a, t, dur, qtd){  // estalinhos depois do estouro
+    for (let i=0;i<qtd;i++){
+      const s = t + Math.pow(Math.random(), 0.7)*dur;
+      const n = a.createBufferSource(); n.buffer = bufRuido(a);
+      const hp = a.createBiquadFilter(); hp.type='bandpass';
+      hp.frequency.value = 2500 + Math.random()*5000; hp.Q.value = 0.8;
+      const g = a.createGain();
+      const v = (0.08 + Math.random()*0.18) * (1 - (s-t)/dur*0.7);
+      g.gain.setValueAtTime(v, s); g.gain.exponentialRampToValueAtTime(0.001, s+0.012+Math.random()*0.02);
+      n.connect(hp).connect(g); saida(a, g); n.start(s, Math.random()*0.4); n.stop(s+0.04);
+    }
+  }
+
+  function fogo(a, t, forca){
+    const sobe = 0.55 + Math.random()*0.35;
+    assobio(a, t, sobe);
+    estouro(a, t+sobe, forca);
+    crepitar(a, t+sobe+0.12, 1.4, 70);
+  }
+
+  // ---------- vinheta de premiação ----------
+  // bateria + metais (estilo abertura de programa esportivo) + fogos + torcida
+  function bumbo(a, t, v){
+    const o = a.createOscillator(), g = a.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t+0.18);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+    o.connect(g).connect(mestre(a)); o.start(t); o.stop(t+0.32);
+  }
+  function caixa(a, t, v){
+    const n = a.createBufferSource(); n.buffer = bufRuido(a);
+    const hp = a.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 1500;
+    const g = a.createGain();
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.16);
+    n.connect(hp).connect(g); saida(a, g); n.start(t, Math.random()*0.3); n.stop(t+0.17);
+    const o = a.createOscillator(), og = a.createGain();
+    o.type='triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(160, t+0.05);
+    og.gain.setValueAtTime(v*0.7, t); og.gain.exponentialRampToValueAtTime(0.001, t+0.09);
+    o.connect(og); saida(a, og); o.start(t); o.stop(t+0.1);
+  }
+  function chimbal(a, t, v){
+    const n = a.createBufferSource(); n.buffer = bufRuido(a);
+    const hp = a.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 8000;
+    const g = a.createGain();
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.05);
+    n.connect(hp).connect(g).connect(mestre(a)); n.start(t, Math.random()*0.4); n.stop(t+0.06);
+  }
+  function prato(a, t, v){
+    const n = a.createBufferSource(); n.buffer = bufRuido(a); n.loop = true;
+    const hp = a.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 4500;
+    const g = a.createGain();
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t+2.2);
+    n.connect(hp).connect(g); saida(a, g); n.start(t); n.stop(t+2.3);
+  }
+  const NOTA = n => 440*Math.pow(2,(n-69)/12);   // número MIDI → Hz
+  function sopro(a, t, notas, dur, v){           // naipe de metais
+    notas.forEach(n=>{
+      const f = NOTA(n);
+      [-9, 0, 9].forEach(c=>{
+        const o = a.createOscillator(); o.type='sawtooth'; o.frequency.value = f; o.detune.value = c;
+        if (dur > 0.5){                          // vibrato nas notas longas
+          const lfo = a.createOscillator(), lg = a.createGain();
+          lfo.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(9, t+0.5);
+          lfo.connect(lg).connect(o.detune); lfo.start(t); lfo.stop(t+dur+0.05);
+        }
+        const lp = a.createBiquadFilter(); lp.type='lowpass'; lp.Q.value = 1;
+        lp.frequency.setValueAtTime(900, t);
+        lp.frequency.linearRampToValueAtTime(4200, t+0.035);
+        lp.frequency.exponentialRampToValueAtTime(2200, t+Math.min(dur, 0.4));
+        const g = a.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(v, t+0.02);
+        g.gain.setValueAtTime(v*0.85, t+dur*0.75);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+        o.connect(lp).connect(g); saida(a, g); o.start(t); o.stop(t+dur+0.05);
+      });
+    });
+  }
+  function torcida(a, t, dur){                   // "uhuuu" de multidão
+    [[500,0.10],[900,0.08],[1500,0.05]].forEach(([fc,v])=>{
+      const n = a.createBufferSource(); n.buffer = bufRuido(a); n.loop = true;
+      const bp = a.createBiquadFilter(); bp.type='bandpass'; bp.Q.value = 2.5;
+      bp.frequency.setValueAtTime(fc*0.8, t); bp.frequency.linearRampToValueAtTime(fc*1.25, t+0.6);
+      bp.frequency.linearRampToValueAtTime(fc, t+dur);
+      const g = a.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v*2.2, t+0.35);
+      g.gain.setValueAtTime(v*2, t+dur*0.5); g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+      n.connect(bp).connect(g); saida(a, g); n.start(t, Math.random()*0.3); n.stop(t+dur+0.05);
+    });
+  }
+
+  function fanfarra(){
+    if (!somLigado) return;
+    const a = audio(), t = a.currentTime + 0.03;
+    const B = 0.2;                                // colcheia (150 bpm)
+    // rufar de entrada
+    for (let i=0;i<8;i++) caixa(a, t + i*0.05, 0.12 + i*0.04);
+    // subida: Sol Dó Mi Sol
+    const T = t + 0.4;
+    [67,72,76,79].forEach((n,i)=> sopro(a, T + i*0.1, [n, n-12], 0.09, 0.05));
+    // pá-pá-pá … PÁÁÁ  (Dó, Dó, Lá♭, Si♭, DÓ)
+    const C = T + 0.4;
+    sopro(a, C,        [72,76,79,84], 0.14, 0.04);
+    sopro(a, C+B,      [72,76,79,84], 0.14, 0.04);
+    sopro(a, C+2*B,    [68,72,75,80], 0.36, 0.04);
+    sopro(a, C+4*B,    [70,74,77,82], 0.36, 0.04);
+    sopro(a, C+6*B,    [72,76,79,84,60], 1.9, 0.042);
+    // bateria tocando junto
+    for (let i=0;i<14;i++){
+      const s = C + i*B;
+      chimbal(a, s, 0.10);
+      if (i%2===0) bumbo(a, s, 0.8);
+      if (i%4===2) caixa(a, s, 0.45);
+    }
+    [C, C+B, C+2*B, C+4*B].forEach(s=>{ bumbo(a, s, 0.9); caixa(a, s, 0.35); });
+    prato(a, C, 0.25);
+    // acorde final: prato forte + fogos + torcida
+    const F = C + 6*B;
+    bumbo(a, F, 1); caixa(a, F, 0.6); prato(a, F, 0.35);
+    estouro(a, F+0.05, 1);
+    crepitar(a, F+0.2, 1.8, 110);
+    fogo(a, F+0.6, 1);
+    fogo(a, F+1.1, 0.9);
+    fogo(a, F+1.5, 1);
+    torcida(a, F, 3.2);
+    aplausos(a, F+0.1, 3.6);
+  }
+
+  // ---------- física ----------
+  // Roda: atrito seco + viscoso. Ponteiro: lingueta presa num pivô acima do aro,
+  // com mola. Os pinos do aro empurram a lingueta de verdade (colisão geométrica):
+  // a lingueta só se move quando um pino encosta nela, entorta até o pino escapar
+  // pela ponta e então volta estalando com a mola. A força da mola é devolvida à
+  // roda, por isso no final ela "trava" no pino e às vezes volta um pouquinho.
+  const ATRITO_SECO = 0.30;   // rad/s²
+  const ATRITO_VOLTA = 1.2;   // atrito quando a roda volta para trás
+  const ATRITO_VISC = 0.15;   // 1/s
+  const K_CONTATO = 5;        // quanto a lingueta freia a roda
+  const K_MOLA = 1700, AMORT = 30;   // lingueta mais firme
+  const PSI_MAX = 0.55;               // batente: a lingueta não passa de ~31°
+  // geometria em frações da largura da roda (centro em 0.5, 0.5)
+  const R_PINO = 0.4775, PIVO_Y = -0.035, LAMINA = 0.11, FOLGA = 0.0185;
+
+  let psi = 0, psiV = 0, emContato = false, maxPsi = 0, tempo = 0, parado = 0;
+  let ultimo = 0;
+
+  function girar(){
+    if (girando) return;
+    audio(); // libera o áudio no clique
+    girando = true; btn.disabled = true;
+    omega = 13 + Math.random()*9;   // força aleatória do "puxão"
+    tempo = 0; parado = 0;
+    ultimo = performance.now();
+    requestAnimationFrame(passo);
+  }
+
+  function contato(proxPsi){
+    // devolve o ângulo da lingueta corrigido pelos pinos (ou null se nenhum encosta)
+    let novo = proxPsi, bateu = false;
+    for (let i=0;i<N;i++){
+      const a = -Math.PI/2 + i*SEG + theta;
+      const x = R_PINO*Math.cos(a), y = 0.5 + R_PINO*Math.sin(a) - PIVO_Y;
+      if (y <= 0) continue;
+      const rho = Math.hypot(x, y);
+      if (rho > LAMINA + 0.02) continue;
+      const beta = Math.atan2(x, y);
+      if (rho*Math.cos(beta - novo) > LAMINA) continue;      // pino passou da ponta
+      const al = Math.asin(Math.min(1, FOLGA/rho));
+      if (beta < psi){ const req = beta + al; if (novo < req){ novo = req; bateu = true; } }
+      else           { const req = beta - al; if (novo > req){ novo = req; bateu = true; } }
+    }
+    return bateu ? novo : null;
+  }
+
+  function passo(agora){
+    const dtF = Math.min((agora - ultimo)/1000, 0.05);
+    ultimo = agora;
+    const sub = 10, dt = dtF/sub;
+    for (let k=0;k<sub;k++){
+      // força da lingueta (passo anterior) + atrito, com atrito estático correto
+      const tq = emContato ? -K_CONTATO*psi : 0;
+      omega += tq*dt;
+      const f = ((omega < 0 ? ATRITO_VOLTA : ATRITO_SECO) + ATRITO_VISC*Math.abs(omega)) * dt;
+      if (Math.abs(omega) <= f){
+        const lim = tq < 0 ? ATRITO_VOLTA : ATRITO_SECO;
+        omega = Math.abs(tq) <= lim ? 0 : omega - Math.sign(omega)*f;
+      } else omega -= Math.sign(omega)*f;
+      theta += omega*dt;
+
+      // lingueta livre (mola amortecida)
+      psiV += (-K_MOLA*psi - AMORT*psiV)*dt;
+      let prox = psi + psiV*dt;
+      const c = contato(prox);
+      if (c !== null){
+        psiV = (c - psi)/dt; prox = c;
+        maxPsi = Math.max(maxPsi, Math.abs(c));
+      } else if (emContato){
+        // pino escapou: lingueta pesada não "voa" — perde parte do embalo
+        psiV *= 0.35 + 0.4*Math.min(1, 1/Math.max(1, Math.abs(omega)/3));
+        tique(Math.min(1, 0.25 + maxPsi*1.8));
+        maxPsi = 0;
+      }
+      emContato = c !== null;
+      if (Math.abs(prox) > PSI_MAX){ prox = Math.sign(prox)*PSI_MAX; psiV *= -0.2; }
+      psi = prox;
+    }
+    tempo += dtF;
+    ponteiro.style.transform = `translateX(-50%) rotate(${-psi*180/Math.PI}deg)`;
+    desenha();
+
+    const quieto = omega === 0 && Math.abs(psiV) < 0.08;
+    parado = quieto ? parado + dtF : 0;
+    if (parado < 0.12 && tempo < 35){
+      requestAnimationFrame(passo);
+    } else {
+      omega = 0; girando = false;
+      setTimeout(fim, 150);
+    }
+  }
+
+  function indiceAtual(){
+    // usa a posição da PONTA da lingueta (se parou empurrando um pino, vale onde a ponta está)
+    const fi = Math.asin(Math.max(-1, Math.min(1, LAMINA*Math.sin(psi)/R_PINO)));
+    const a = ((fi - theta) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+    return Math.floor(a / SEG) % N;
+  }
+
+  function fim(){
+    const i = indiceAtual();
+    document.getElementById('resNum').textContent = i+1;
+    document.getElementById('resPremio').textContent = premios[i] || '';
+    document.getElementById('modal').classList.add('on');
+    fanfarra(); confete();
+  }
+
+  // ---------- confete ----------
+  const cc = document.getElementById('confete'), cx = cc.getContext('2d');
+  let parts = [], confAtivo = false;
+  function confete(){
+    cc.width = innerWidth; cc.height = innerHeight;
+    const cores = [AMARELO,'#FFFFFF',VERDE,'#0A8F4D',AMARELO];
+    for (let i=0;i<220;i++){
+      parts.push({
+        x: innerWidth/2 + (Math.random()-.5)*120, y: innerHeight*0.45,
+        vx: (Math.random()-.5)*18, vy: -Math.random()*18-6,
+        r: Math.random()*Math.PI, vr:(Math.random()-.5)*0.4,
+        w: 6+Math.random()*8, h: 10+Math.random()*10,
+        c: cores[i%cores.length], vida: 1
+      });
+    }
+    if (!confAtivo){ confAtivo = true; requestAnimationFrame(animaConf); }
+  }
+  function animaConf(){
+    cx.clearRect(0,0,cc.width,cc.height);
+    parts.forEach(p=>{
+      p.vy += 0.45; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.vida -= 0.006;
+      cx.save(); cx.globalAlpha = Math.max(0,p.vida); cx.translate(p.x,p.y); cx.rotate(p.r);
+      cx.fillStyle = p.c; cx.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.r*2))); cx.restore();
+    });
+    parts = parts.filter(p=>p.vida>0 && p.y < cc.height+40);
+    if (parts.length) requestAnimationFrame(animaConf);
+    else { confAtivo = false; cx.clearRect(0,0,cc.width,cc.height); }
+  }
+
+  // ---------- interface ----------
+  btn.onclick = girar;
+  document.getElementById('fechar').onclick = () => {
+    document.getElementById('modal').classList.remove('on'); btn.disabled = false;
+  };
+  addEventListener('keydown', e=>{
+    if (document.getElementById('config').classList.contains('on') || document.getElementById('instrucoes').classList.contains('on')) return;
+    if (e.code === 'Space' || e.code === 'Enter'){
+      e.preventDefault();
+      const m = document.getElementById('modal');
+      if (m.classList.contains('on')) document.getElementById('fechar').click();
+      else girar();
+    }
+  });
+
+  const btnSom = document.getElementById('btnSom');
+  btnSom.onclick = () => { somLigado = !somLigado; btnSom.textContent = somLigado ? '🔊' : '🔇'; };
+  document.getElementById('btnTela').onclick = () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  };
+
+  const cfg = document.getElementById('config'), linhas = document.getElementById('linhas');
+  document.getElementById('btnConfig').onclick = () => {
+    if (girando) return;
+    linhas.innerHTML = '';
+    for (let i=0;i<N;i++){
+      const verde = i%2===0;
+      linhas.insertAdjacentHTML('beforeend',
+        `<div class="linha"><b style="background:${verde?VERDE:AMARELO};color:${verde?AMARELO:ESCURO}">${i+1}</b>
+         <input maxlength="28" placeholder="Ex.: Vale-brinde" value="${(premios[i]||'').replace(/"/g,'&quot;')}"></div>`);
+    }
+    cfg.classList.add('on');
+  };
+  document.getElementById('cancelar').onclick = () => cfg.classList.remove('on');
+  document.getElementById('salvar').onclick = () => {
+    premios = [...linhas.querySelectorAll('input')].map(x=>x.value.trim());
+    try { localStorage.setItem('roletaCGLub', JSON.stringify(premios)); } catch(e){}
+    cfg.classList.remove('on'); desenha();
+  };
+
+
+  // ---------- app instalável ----------
+  const btnInst = document.getElementById('btnInstalar');
+  const instr = document.getElementById('instrucoes'), passos = document.getElementById('instrPassos');
+  const ua = navigator.userAgent;
+  const ehIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const ehAndroid = /Android/i.test(ua);
+  const instalado = () => matchMedia('(display-mode: standalone)').matches ||
+                          matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+  let pedidoInstalar = null;
+
+  if (!instalado() && location.protocol.startsWith('http')) btnInst.classList.add('on');
+  // tela cheia não existe no iPhone e não é necessária no app instalado
+  if (instalado() || (ehIOS && !document.documentElement.requestFullscreen)) document.getElementById('btnTela').style.display = 'none';
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; if (!instalado()) btnInst.classList.add('on'); });
+  addEventListener('appinstalled', () => { btnInst.classList.remove('on'); pedidoInstalar = null; });
+
+  const SHARE = '<svg class="ico-share" viewBox="0 0 24 24" fill="none" stroke="#FFD200" stroke-width="2"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v8h14v-8"/></svg>';
+  btnInst.onclick = async () => {
+    if (pedidoInstalar){
+      pedidoInstalar.prompt();
+      const r = await pedidoInstalar.userChoice;
+      if (r.outcome === 'accepted') btnInst.classList.remove('on');
+      pedidoInstalar = null;
+      return;
+    }
+    let lista;
+    if (ehIOS) lista = [
+      'Abra este link no <b>Safari</b> (se abriu pelo WhatsApp ou Instagram, toque em ··· e escolha “Abrir no Safari”).',
+      'Toque no botão <b>Compartilhar</b> ' + SHARE + ' na barra do Safari.',
+      'Role e toque em <b>Adicionar à Tela de Início</b>.',
+      'Toque em <b>Adicionar</b>. O ícone da roleta aparece junto com os seus apps.'];
+    else if (ehAndroid) lista = [
+      'Abra este link no <b>Chrome</b> (se abriu pelo WhatsApp, toque em ⋮ e escolha “Abrir no Chrome”).',
+      'Toque no menu <b>⋮</b> no canto superior direito.',
+      'Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.',
+      'Confirme. O ícone da roleta aparece junto com os seus apps.'];
+    else lista = [
+      'Use o <b>Chrome</b> ou o <b>Edge</b>.',
+      'Clique no ícone de <b>instalar</b> (monitor com seta) no fim da barra de endereço, ou no menu <b>⋮ → Transmitir, salvar e compartilhar → Instalar página como app</b>.',
+      'Confirme. A roleta abre em janela própria e fica no menu Iniciar / Área de trabalho.'];
+    passos.innerHTML = lista.map(x => '<li>' + x + '</li>').join('');
+    instr.classList.add('on');
+  };
+  document.getElementById('instrOk').onclick = () => instr.classList.remove('on');
+
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
+
+  addEventListener('resize', tamanho);
+  tamanho();
+  document.fonts && document.fonts.ready.then(desenha);
+})();
+</script>
+</body>
+</html>
