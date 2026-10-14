@@ -1,6 +1,6 @@
 // Service worker da Roleta CG LUB: deixa o app funcionando offline.
 // Ao publicar uma versão nova, mude o número abaixo.
-const VERSAO = 'roleta-cglub-v7';
+const VERSAO = 'roleta-cglub-v9';
 const ARQUIVOS = [
   './',
   './index.html',

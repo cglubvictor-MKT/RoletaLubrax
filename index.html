@@ -179,11 +179,31 @@
   .rot span{font-weight:500;opacity:.6;font-size:12px}
   .campo{width:100%;padding:9px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#fff;font:inherit}
   .campo:focus,.linha input:focus{outline:2px solid var(--amarelo);outline-offset:1px}
-  .linha{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .linha{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+  .linha > b, .linha > .chk{margin-top:4px}
   .chk{display:flex;align-items:center;gap:5px;flex:none;cursor:pointer;font-size:13px;opacity:.9;user-select:none}
   .chk input{width:20px;height:20px;accent-color:#FFD200;cursor:pointer;margin:0}
   .chk:has(input:not(:checked)) span{text-decoration:line-through;opacity:.5}
   .linha b{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:18px;flex:none}
+  .linha input.qtd{width:58px;flex:none;padding:8px 6px;border-radius:8px;border:1px solid rgba(255,210,0,.45);background:rgba(255,210,0,.08);color:#FFD200;font:inherit;font-weight:700;text-align:center}
+  .linha input.qtd::placeholder{color:#FFD200;opacity:.7}
+  .contagem{font-size:12.5px;opacity:.85;margin-top:10px;line-height:1.7}
+  .contagem span{display:inline-block;background:rgba(255,255,255,.08);border-radius:6px;padding:0 6px;margin:0 2px}
+  .contagem button{margin-left:6px;background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:1px 8px;font:inherit;cursor:pointer}
+  .pesoBox{display:flex;flex-direction:column;align-items:center;flex:none;width:58px}
+  .linha input.peso{width:58px;padding:8px 6px;border-radius:8px;border:1px solid rgba(120,220,160,.55);background:rgba(20,168,92,.12);color:#9BF0BF;font:inherit;font-weight:700;text-align:center}
+  .linha input.peso::placeholder{color:#9BF0BF;opacity:.6}
+  .pct{font-size:11px;font-weight:700;color:#9BF0BF;margin-top:2px;line-height:1}
+  .pct.zero{color:#ff9b9b}
+  .legenda{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;opacity:.75;margin:-2px 0 8px}
+  .legenda b{font-weight:800} .legenda .lq{color:#FFD200} .legenda .lc{color:#9BF0BF}
+  .linha{flex-wrap:wrap}
+  @media (max-width:520px){
+    .config .linha{row-gap:4px}
+    .config .linha input.nome{flex:1 1 calc(100% - 40px)}
+    .config .linha input.qtd{margin-left:40px}
+    .config .linha > .chk{margin-left:auto}
+  }
   .linha input.nome{flex:1;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#fff;font:inherit}
   .config .acoes{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
   .config .botao{margin:0;font-size:20px;padding:8px 26px}
@@ -254,14 +274,25 @@
 <div class="modal config" id="config">
   <div class="cartao">
     <h2>Configurações</h2>
-    <label class="rot" for="inpFrase">Frase da tela <span>(opcional, aparece abaixo do logo)</span></label>
+    <label class="rot" for="inpFrase">Frase da tela <span>(opcional, aparece acima da roleta)</span></label>
     <input id="inpFrase" class="campo" maxlength="70" placeholder="Ex.: Gire e ganhe!">
-    <label class="rot">Prêmios <span>(opcional; o texto se ajusta sozinho · marque “nº” para mostrar o número na roleta)</span></label>
+    <label class="rot">Prêmios</label>
+    <div class="legenda"><span><b class="lq">Qtd</b> estoque (vazio = sem limite)</span><span><b class="lc">Chance</b> peso: 2 = o dobro de 1 · 0 = nunca sai</span><span><b>nº</b> mostra o número</span></div>
     <div id="linhas"></div>
+    <div class="contagem" id="contagem"></div>
     <div class="acoes">
       <button class="botao sec" id="cancelar">Cancelar</button>
       <button class="botao" id="salvar">Salvar</button>
     </div>
+  </div>
+</div>
+
+<!-- Aviso -->
+<div class="modal config" id="aviso">
+  <div class="cartao">
+    <h2 id="avisoTit"></h2>
+    <p id="avisoTxt" style="font-size:16px;opacity:.9"></p>
+    <div class="acoes"><button class="botao" id="avisoOk">OK</button></div>
   </div>
 </div>
 
@@ -287,6 +318,27 @@
   let premios = Array(N).fill('');
   let mostraNum = Array(N).fill(true);
   try { const m = JSON.parse(localStorage.getItem('roletaCGLubNum') || 'null'); if (Array.isArray(m)) mostraNum = m; } catch(e){}
+  let estoque = Array(N).fill(null);   // null = ilimitado
+  let saiu = Array(N).fill(0);
+  try { const e = JSON.parse(localStorage.getItem('roletaCGLubEstoque') || 'null'); if (Array.isArray(e)) estoque = e; } catch(e){}
+  try { const e = JSON.parse(localStorage.getItem('roletaCGLubSaiu') || 'null'); if (Array.isArray(e)) saiu = e; } catch(e){}
+  estoque = Array.from({length:N}, (_,i) => (estoque[i] == null ? null : estoque[i]));
+  saiu = Array.from({length:N}, (_,i) => saiu[i] || 0);
+  function salvaEstoque(){
+    try { localStorage.setItem('roletaCGLubEstoque', JSON.stringify(estoque)); localStorage.setItem('roletaCGLubSaiu', JSON.stringify(saiu)); } catch(e){}
+  }
+  let pesos = Array(N).fill(1);        // chance relativa de cada prêmio (2 = o dobro de 1; 0 = nunca sai)
+  try { const e = JSON.parse(localStorage.getItem('roletaCGLubPeso') || 'null'); if (Array.isArray(e)) pesos = Array.from({length:N}, (_,i) => (typeof e[i] === 'number' && e[i] >= 0) ? e[i] : 1); } catch(e){}
+  const temEstoque = i => estoque[i] == null || estoque[i] > 0;
+  // sorteia um prêmio respeitando estoque e chance
+  function sorteiaAlvo(){
+    const cand = []; let tot = 0;
+    for (let i=0;i<N;i++) if (temEstoque(i) && pesos[i] > 0){ cand.push(i); tot += pesos[i]; }
+    if (!cand.length) return -1;
+    let r = Math.random()*tot;
+    for (const i of cand){ r -= pesos[i]; if (r < 0) return i; }
+    return cand[cand.length-1];
+  }
   let frase = '';
   try { frase = localStorage.getItem('roletaCGLubFrase') || ''; } catch(e){}
   function mostraFrase(){
@@ -408,6 +460,17 @@
         bloco.linhas.forEach((ln, k) => c.fillText(ln, 0, -bloco.topo + (k+0.5)*bloco.lh));
       }
       c.restore();
+      if (estoque[i] === 0){
+        // esgotado: escurece a fatia e escreve ESGOTADO
+        c.beginPath(); c.moveTo(0,0); c.arc(0,0,Rr,a0,a1); c.closePath();
+        c.fillStyle = 'rgba(7,20,9,.68)'; c.fill();
+        c.save(); c.rotate(a0 + SEG/2);          // escrito ao longo do raio
+        c.textAlign='center'; c.textBaseline='middle'; c.fillStyle='#FFFFFF';
+        let fe = Rr*0.11; c.font = `800 ${fe}px 'Barlow Condensed', sans-serif`;
+        while (c.measureText('ESGOTADO').width > Rr*0.6 && fe > 8){ fe -= 1; c.font = `800 ${fe}px 'Barlow Condensed', sans-serif`; }
+        c.fillText('ESGOTADO', Rr*0.58, 0);
+        c.restore();
+      }
     }
 
     // pinos nas divisões
@@ -684,7 +747,10 @@
   // geometria em frações da largura da roda (centro em 0.5, 0.5)
   const R_PINO = 0.4775, PIVO_Y = -0.035, LAMINA = 0.11, FOLGA = 0.0185;
 
-  let psi = 0, psiV = 0, emContato = false, maxPsi = 0, tempo = 0, parado = 0;
+  // A física roda em passos fixos de 1/600 s. Assim ela é determinística: dá para
+  // simular o giro inteiro antes (em milissegundos) e saber onde a roda vai parar.
+  const H = 1/600, PARADO_PASSOS = 72, T_MAX = 35;
+  let psi = 0, psiV = 0, emContato = false, maxPsi = 0, tempo = 0, quietos = 0, acum = 0;
   let ultimo = 0;
 
   // mantém a tela ligada enquanto a roleta estiver aberta
@@ -695,21 +761,35 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') manterTelaLigada(); });
   addEventListener('pointerdown', manterTelaLigada, {passive:true});
 
+  function aviso(t, txt){
+    document.getElementById('avisoTit').textContent = t;
+    document.getElementById('avisoTxt').textContent = txt;
+    document.getElementById('aviso').classList.add('on');
+  }
+  document.getElementById('avisoOk').onclick = () => document.getElementById('aviso').classList.remove('on');
+
   function girar(){
     if (girando) return;
+    const alvo = sorteiaAlvo();
+    if (alvo < 0){ aviso('Nenhum prêmio disponível', 'Todos os prêmios estão esgotados ou com chance 0. Ajuste as quantidades ou as chances no ⚙ para continuar.'); return; }
     audio(); // libera o áudio no clique
+    // acha uma força de giro que, pela física, faz a roda parar no prêmio sorteado
+    let w = 13 + Math.random()*9;
+    for (let k=0; k<400; k++){
+      const cand = 13 + Math.random()*9;
+      if (simula(cand) === alvo){ w = cand; break; }
+    }
     girando = true; btn.disabled = true;
-    omega = 13 + Math.random()*9;   // força aleatória do "puxão"
-    tempo = 0; parado = 0;
+    omega = w; tempo = 0; quietos = 0; acum = 0;
     ultimo = performance.now();
     requestAnimationFrame(passo);
   }
 
-  function contato(proxPsi){
+  function contato(st, proxPsi){
     // devolve o ângulo da lingueta corrigido pelos pinos (ou null se nenhum encosta)
     let novo = proxPsi, bateu = false;
     for (let i=0;i<N;i++){
-      const a = -Math.PI/2 + i*SEG + theta;
+      const a = -Math.PI/2 + i*SEG + st.theta;
       const x = R_PINO*Math.cos(a), y = 0.5 + R_PINO*Math.sin(a) - PIVO_Y;
       if (y <= 0) continue;
       const rho = Math.hypot(x, y);
@@ -717,51 +797,67 @@
       const beta = Math.atan2(x, y);
       if (rho*Math.cos(beta - novo) > LAMINA) continue;      // pino passou da ponta
       const al = Math.asin(Math.min(1, FOLGA/rho));
-      if (beta < psi){ const req = beta + al; if (novo < req){ novo = req; bateu = true; } }
-      else           { const req = beta - al; if (novo > req){ novo = req; bateu = true; } }
+      if (beta < st.psi){ const req = beta + al; if (novo < req){ novo = req; bateu = true; } }
+      else              { const req = beta - al; if (novo > req){ novo = req; bateu = true; } }
     }
     return bateu ? novo : null;
   }
 
-  function passo(agora){
-    const dtF = Math.min((agora - ultimo)/1000, 0.05);
-    ultimo = agora;
-    const sub = 10, dt = dtF/sub;
-    for (let k=0;k<sub;k++){
-      // força da lingueta (passo anterior) + atrito, com atrito estático correto
-      const tq = emContato ? -K_CONTATO*psi : 0;
-      omega += tq*dt;
-      const f = ((omega < 0 ? ATRITO_VOLTA : ATRITO_SECO) + ATRITO_VISC*Math.abs(omega)) * dt;
-      if (Math.abs(omega) <= f){
-        const lim = tq < 0 ? ATRITO_VOLTA : ATRITO_SECO;
-        omega = Math.abs(tq) <= lim ? 0 : omega - Math.sign(omega)*f;
-      } else omega -= Math.sign(omega)*f;
-      theta += omega*dt;
+  // um passo de física; devolve a intensidade do "clique" (0 = sem clique)
+  function passoFisico(st){
+    const dt = H;
+    const tq = st.emContato ? -K_CONTATO*st.psi : 0;
+    st.omega += tq*dt;
+    const f = ((st.omega < 0 ? ATRITO_VOLTA : ATRITO_SECO) + ATRITO_VISC*Math.abs(st.omega)) * dt;
+    if (Math.abs(st.omega) <= f){
+      const lim = tq < 0 ? ATRITO_VOLTA : ATRITO_SECO;
+      st.omega = Math.abs(tq) <= lim ? 0 : st.omega - Math.sign(st.omega)*f;
+    } else st.omega -= Math.sign(st.omega)*f;
+    st.theta += st.omega*dt;
 
-      // lingueta livre (mola amortecida)
-      psiV += (-K_MOLA*psi - AMORT*psiV)*dt;
-      let prox = psi + psiV*dt;
-      const c = contato(prox);
-      if (c !== null){
-        psiV = (c - psi)/dt; prox = c;
-        maxPsi = Math.max(maxPsi, Math.abs(c));
-      } else if (emContato){
-        // pino escapou: lingueta pesada não "voa" — perde parte do embalo
-        psiV *= 0.35 + 0.4*Math.min(1, 1/Math.max(1, Math.abs(omega)/3));
-        tique(Math.min(1, 0.25 + maxPsi*1.8));
-        maxPsi = 0;
-      }
-      emContato = c !== null;
-      if (Math.abs(prox) > PSI_MAX){ prox = Math.sign(prox)*PSI_MAX; psiV *= -0.2; }
-      psi = prox;
+    st.psiV += (-K_MOLA*st.psi - AMORT*st.psiV)*dt;
+    let prox = st.psi + st.psiV*dt, clique = 0;
+    const c = contato(st, prox);
+    if (c !== null){
+      st.psiV = (c - st.psi)/dt; prox = c;
+      st.maxPsi = Math.max(st.maxPsi, Math.abs(c));
+    } else if (st.emContato){
+      st.psiV *= 0.35 + 0.4*Math.min(1, 1/Math.max(1, Math.abs(st.omega)/3));
+      clique = Math.min(1, 0.25 + st.maxPsi*1.8);
+      st.maxPsi = 0;
     }
-    tempo += dtF;
+    st.emContato = c !== null;
+    if (Math.abs(prox) > PSI_MAX){ prox = Math.sign(prox)*PSI_MAX; st.psiV *= -0.2; }
+    st.psi = prox;
+    st.tempo += dt;
+    st.quietos = (st.omega === 0 && Math.abs(st.psiV) < 0.08) ? st.quietos + 1 : 0;
+    st.fim = st.quietos >= PARADO_PASSOS || st.tempo >= T_MAX;
+    return clique;
+  }
+
+  function estadoAtual(){ return {theta, omega, psi, psiV, emContato, maxPsi, tempo, quietos, fim:false}; }
+  function aplica(st){ ({theta, omega, psi, psiV, emContato, maxPsi, tempo, quietos} = st); }
+
+  // simula o giro inteiro a partir da posição atual (sem som e sem desenhar)
+  function simula(w){
+    const st = estadoAtual(); st.omega = w; st.tempo = 0; st.quietos = 0;
+    while (!st.fim) passoFisico(st);
+    return indiceDe(st.theta, st.psi);
+  }
+
+  function passo(agora){
+    acum += Math.min((agora - ultimo)/1000, 0.05);
+    ultimo = agora;
+    const st = estadoAtual();
+    while (acum >= H && !st.fim){
+      const cl = passoFisico(st);
+      if (cl) tique(cl);
+      acum -= H;
+    }
+    aplica(st);
     ponteiro.style.transform = `translateX(-50%) rotate(${-psi*180/Math.PI}deg)`;
     desenha();
-
-    const quieto = omega === 0 && Math.abs(psiV) < 0.08;
-    parado = quieto ? parado + dtF : 0;
-    if (parado < 0.12 && tempo < 35){
+    if (!st.fim){
       requestAnimationFrame(passo);
     } else {
       omega = 0; girando = false;
@@ -769,15 +865,19 @@
     }
   }
 
-  function indiceAtual(){
+  function indiceDe(th, ps){
     // usa a posição da PONTA da lingueta (se parou empurrando um pino, vale onde a ponta está)
-    const fi = Math.asin(Math.max(-1, Math.min(1, LAMINA*Math.sin(psi)/R_PINO)));
-    const a = ((fi - theta) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+    const fi = Math.asin(Math.max(-1, Math.min(1, LAMINA*Math.sin(ps)/R_PINO)));
+    const a = ((fi - th) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
     return Math.floor(a / SEG) % N;
   }
+  function indiceAtual(){ return indiceDe(theta, psi); }
 
   function fim(){
     const i = indiceAtual();
+    saiu[i] = (saiu[i]||0) + 1;
+    if (estoque[i] != null && estoque[i] > 0) estoque[i]--;
+    salvaEstoque(); desenha();
     const comNum = mostraNum[i] !== false || !premios[i];   // sem nome, mostra o número de qualquer jeito
     document.getElementById('resNum').textContent = i+1;
     document.getElementById('resNum').hidden = !comNum;
@@ -825,7 +925,7 @@
     document.getElementById('modal').classList.remove('on'); btn.disabled = false;
   };
   addEventListener('keydown', e=>{
-    if (document.getElementById('config').classList.contains('on') || document.getElementById('instrucoes').classList.contains('on')) return;
+    if (['config','instrucoes','aviso'].some(id => document.getElementById(id).classList.contains('on'))) return;
     if (e.code === 'Space' || e.code === 'Enter'){
       e.preventDefault();
       const m = document.getElementById('modal');
@@ -850,15 +950,44 @@
       linhas.insertAdjacentHTML('beforeend',
         `<div class="linha"><b style="background:${verde?VERDE:AMARELO};color:${verde?AMARELO:ESCURO}">${i+1}</b>
          <input class="nome" maxlength="40" placeholder="Ex.: Vale-brinde" value="${(premios[i]||'').replace(/"/g,'&quot;')}">
+         <input class="qtd" type="number" min="0" step="1" inputmode="numeric" placeholder="∞" title="Quantidade em estoque (vazio = sem limite)" value="${estoque[i]==null?'':estoque[i]}">
+         <span class="pesoBox"><input class="peso" type="number" min="0" step="1" inputmode="numeric" placeholder="1" title="Chance (peso): 2 = o dobro de 1, 0 = nunca sai" value="${pesos[i]===1?'':pesos[i]}"><small class="pct"></small></span>
          <label class="chk" title="Mostrar o número ${i+1} na roleta"><input type="checkbox" class="num" ${mostraNum[i]!==false?'checked':''}><span>nº</span></label></div>`);
     }
     document.getElementById('inpFrase').value = frase;
+    mostraContagem(); atualizaPct();
+    linhas.querySelectorAll('input.peso, input.qtd').forEach(x => x.oninput = atualizaPct);
     cfg.classList.add('on');
   };
+  // mostra, ao lado de cada chance, a porcentagem real do próximo giro
+  function lePeso(x){ const v = x.value.trim(); if (v === '') return 1; const n = +v; return isNaN(n) || n < 0 ? 1 : n; }
+  function leQtd(x){ const v = x.value.trim(); if (v === '') return null; const n = Math.max(0, Math.floor(+v)); return isNaN(n) ? null : n; }
+  function atualizaPct(){
+    const ps = [...linhas.querySelectorAll('input.peso')].map(lePeso);
+    const qs = [...linhas.querySelectorAll('input.qtd')].map(leQtd);
+    const ok = ps.map((p,i) => (qs[i] == null || qs[i] > 0) && p > 0);
+    const tot = ps.reduce((a,p,i) => a + (ok[i] ? p : 0), 0);
+    linhas.querySelectorAll('.pct').forEach((el,i) => {
+      el.textContent = (qs[i] === 0) ? 'esgot.' : (!ok[i] || !tot) ? '0%' : (100*ps[i]/tot).toLocaleString('pt-BR',{maximumFractionDigits:1}) + '%';
+      el.classList.toggle('zero', !ok[i]);
+    });
+  }
+  function mostraContagem(){
+    const total = saiu.reduce((a,b)=>a+(b||0),0);
+    const el = document.getElementById('contagem');
+    el.innerHTML = '<b>Já saíram (' + total + ' giros):</b> ' +
+      saiu.map((n,i)=>'<span>' + (i+1) + ': ' + (n||0) + '</span>').join(' ') +
+      ' <button type="button" id="zerar">Zerar contagem</button>';
+    document.getElementById('zerar').onclick = () => { saiu = Array(N).fill(0); salvaEstoque(); mostraContagem(); };
+  }
   document.getElementById('cancelar').onclick = () => cfg.classList.remove('on');
   document.getElementById('salvar').onclick = () => {
     premios = [...linhas.querySelectorAll('input.nome')].map(x=>x.value.trim());
     mostraNum = [...linhas.querySelectorAll('input.num')].map(x=>x.checked);
+    estoque = [...linhas.querySelectorAll('input.qtd')].map(leQtd);
+    pesos = [...linhas.querySelectorAll('input.peso')].map(lePeso);
+    try { localStorage.setItem('roletaCGLubPeso', JSON.stringify(pesos)); } catch(e){}
+    salvaEstoque();
     try { localStorage.setItem('roletaCGLubNum', JSON.stringify(mostraNum)); } catch(e){}
     frase = document.getElementById('inpFrase').value.trim();
     try { localStorage.setItem('roletaCGLub', JSON.stringify(premios)); localStorage.setItem('roletaCGLubFrase', frase); } catch(e){}
